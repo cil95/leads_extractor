@@ -104,6 +104,24 @@ h1 {
   margin-top: 1.5rem;
 }
 
+.result-block h3.collapsible {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.result-block h3.collapsible:hover {
+  color: #5b8cff;
+}
+
+.chevron {
+  display: inline-block;
+  width: 1em;
+  color: #9aa0ac;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

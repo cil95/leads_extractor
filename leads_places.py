@@ -25,6 +25,7 @@ API-Dokumentation:
 import os
 import sys
 import time
+import urllib.parse
 
 import requests
 from dotenv import load_dotenv
@@ -32,6 +33,36 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
+
+# Places API hat kein Feld "hat Online-Terminbuchung". Heuristik: wenn die
+# hinterlegte Website-Domain zu einer bekannten Buchungsplattform gehört
+# (z.B. "dein-schnitt.mytreatwell.de"), werten wir das als Terminbuchung
+# vorhanden. Erkennt nicht jedes eigene Buchungswidget auf eigener Domain,
+# deckt aber die gängigsten Anbieter im DACH-Raum ab.
+BOOKING_PLATFORM_DOMAINS = [
+    "mytreatwell.de",
+    "treatwell.de",
+    "fresha.com",
+    "shore.com",
+    "terminland.de",
+    "salonized.com",
+    "bookitit.de",
+    "calendly.com",
+    "doctolib.de",
+    "samedi.de",
+    "reservio.com",
+    "planity.com",
+    "setmore.com",
+    "simplybook.me",
+    "terminplaner24.de",
+]
+
+
+def has_booking_platform(website: str | None) -> bool:
+    if not website:
+        return False
+    host = urllib.parse.urlparse(website).netloc.lower()
+    return any(host == d or host.endswith(f".{d}") for d in BOOKING_PLATFORM_DOMAINS)
 
 # Felder, die wir pro Treffer brauchen. Explizit angeben (FieldMask),
 # sonst lehnt die API die Anfrage ab bzw. es werden unnötig viele
@@ -121,6 +152,7 @@ def search(query: str, api_key: str | None = None, debug: bool = False) -> dict:
                 "phone": phone,
                 "rating": rating_str,
                 "website": website,
+                "booking": has_booking_platform(website),
             }
         )
 
@@ -171,6 +203,12 @@ def main():
             print()
     else:
         print("Alle gefundenen Firmen haben eine Webseite hinterlegt.")
+
+    if with_site:
+        print("\n=== Firmen mit Webseite (Terminbuchung erkannt?) ===\n")
+        for r in with_site:
+            booking_str = "Ja" if r["booking"] else "Nein"
+            print(f"- {r['name']}  ->  Terminbuchung: {booking_str}  ({r['website']})")
 
 
 if __name__ == "__main__":

@@ -9,31 +9,44 @@ const MODES = {
   },
 };
 
-function LeadTable({ title, rows }) {
+function LeadTable({ title, rows, showBooking, collapsible, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen);
+
   if (!rows || rows.length === 0) return null;
+
   return (
     <div className="result-block">
-      <h3>{title} ({rows.length})</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Adresse</th>
-            <th>Telefon</th>
-            <th>Bewertung</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td>{r.name}</td>
-              <td>{r.address || "-"}</td>
-              <td>{r.phone || "-"}</td>
-              <td>{r.rating || "-"}</td>
+      <h3
+        className={collapsible ? "collapsible" : ""}
+        onClick={collapsible ? () => setOpen((o) => !o) : undefined}
+      >
+        {collapsible && <span className="chevron">{open ? "▾" : "▸"}</span>}
+        {title} ({rows.length})
+      </h3>
+      {(!collapsible || open) && (
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Adresse</th>
+              <th>Telefon</th>
+              <th>Bewertung</th>
+              {showBooking && <th>Terminbuchung</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i}>
+                <td>{r.name}</td>
+                <td>{r.address || "-"}</td>
+                <td>{r.phone || "-"}</td>
+                <td>{r.rating || "-"}</td>
+                {showBooking && <td>{r.booking ? "Ja" : "Nein"}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
@@ -114,7 +127,13 @@ export default function App() {
             {result.total} Treffer für "{result.query}" – {result.without_website?.length || 0} ohne Webseite
           </p>
           <LeadTable title="Leads ohne Webseite" rows={result.without_website} />
-          <LeadTable title="Haben bereits eine Webseite" rows={result.with_website} />
+          <LeadTable
+            title="Haben bereits eine Webseite"
+            rows={result.with_website}
+            showBooking={mode === "places"}
+            collapsible
+            defaultOpen={false}
+          />
         </div>
       )}
     </div>
