@@ -1,0 +1,19 @@
+[Unit]
+Description=Leads API (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/leads
+EnvironmentFile=/home/ubuntu/leads/.env
+ExecStart=/home/ubuntu/leads/.venv/bin/uvicorn server:app --host 127.0.0.1 --port 8000
+# Nur localhost - nach außen läuft alles über nginx (443, siehe deploy/README.md)
+Restart=on-failure
+RestartSec=5
+# Nur 1 GB RAM auf dem Server -> falls Chromium doch mal ausbricht, lieber
+# den Prozess sauber neu starten lassen als das ganze System zu würgen.
+MemoryMax=900M
+
+[Install]
+WantedBy=multi-user.target
