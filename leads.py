@@ -67,6 +67,27 @@ def dismiss_button(page, texts, debug: bool = False) -> bool:
 XPATH_NEXT_PAGE_BUTTON = "//a[@id='pnnext']//span"
 
 
+def safe_content(page, retries: int = 5) -> str:
+    """page.content() schlägt fehl, wenn die Seite gerade noch navigiert
+    ("Unable to retrieve content because the page is navigating"). Auf
+    einem langsamen Server (wenig RAM/CPU) dauert das Laden länger als
+    die festen wait_for_timeout-Pausen einkalkulieren, deshalb hier
+    zusätzlich auf den Ladezustand warten und notfalls mehrfach versuchen.
+    """
+    last_error = None
+    for _ in range(retries):
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=5000)
+        except Exception:
+            pass
+        try:
+            return page.content()
+        except Exception as e:
+            last_error = e
+            page.wait_for_timeout(500)
+    raise last_error
+
+
 def fetch_search_html(query: str, debug: bool = False) -> list[str]:
     """Sammelt das HTML aller Ergebnisseiten. Klickt so lange auf den
     "Weiter"-Button (//a[@id='pnnext']), bis dieser nicht mehr
@@ -140,7 +161,7 @@ def fetch_search_html(query: str, debug: bool = False) -> list[str]:
         pages_html = []
         page_num = 1
         while True:
-            html = page.content()
+            html = safe_content(page)
             pages_html.append(html)
             if debug:
                 print(f"[debug] Seite {page_num} eingesammelt ({len(html)} Zeichen)")
