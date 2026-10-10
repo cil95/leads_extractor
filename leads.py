@@ -128,35 +128,15 @@ def fetch_search_html(query: str, debug: bool = False) -> list[str]:
         # Google fragt bei lokalen Suchen manchmal per Pop-up nach dem Standort.
         dismiss_button(page, ["Später", "Nicht jetzt", "Not now"], debug)
 
-        try:
-            more = page.locator(
-                "xpath=//span[text()='Weitere Geschäfte' or text()='Weitere Orte' or text()='Mehr anzeigen']/ancestor::*[2]"
-            )
-            count = more.count()
-            if debug:
-                print(f"[debug] 'Weitere Geschäfte'-Button gefunden: {count}x")
-            if count > 0:
-                more.first.click(timeout=3000)
-                page.wait_for_timeout(2000)
-                if debug:
-                    print("[debug] Button geklickt")
-        except Exception as e:
-            if debug:
-                print(f"[debug] Klick auf 'Weitere Geschäfte' fehlgeschlagen: {e}")
-
-        try:
-            orte = page.locator("xpath=//span[text()='Orte']/../..")
-            count = orte.count()
-            if debug:
-                print(f"[debug] 'Orte'-Button gefunden: {count}x")
-            if count > 0:
-                orte.first.click(timeout=3000)
-                page.wait_for_timeout(2000)
-                if debug:
-                    print("[debug] 'Orte'-Button geklickt")
-        except Exception as e:
-            if debug:
-                print(f"[debug] Klick auf 'Orte' fehlgeschlagen: {e}")
+        # Direkt zur lokalen Ergebnisliste (Tab "Orte") wechseln, statt nach
+        # "Weitere Geschäfte"/"Orte"-Buttons zu suchen - deren Markup ändert
+        # Google ständig, der URL-Parameter tbm=lcl bleibt dagegen stabil.
+        # Ohne diesen Schritt landet die Paginierung in den normalen
+        # Web-Ergebnissen, in denen es keine rllt__details-Karten gibt.
+        page.goto(page.url + "&tbm=lcl", timeout=60000)
+        page.wait_for_timeout(3000)
+        if debug:
+            print(f"[debug] Lokale Ergebnisliste geöffnet: {page.url}")
 
         if debug:
             page.wait_for_timeout(3000)  # Zeit, das Ergebnis im Browserfenster zu sehen
@@ -222,6 +202,11 @@ def extract_website(details) -> tuple[str | None, str | None]:
     href = a[0].get("href")
     if href and href.startswith("http") and "google." not in href:
         return href, href
+    # Google verlinkt Firmenwebsites inzwischen über die eigene Weiterleitung
+    # /goto?url=<verschlüsselt> statt direkt. Das ist trotzdem eine echte
+    # Website (Anzeigen laufen dagegen über /aclk).
+    if href and href.startswith("/goto?"):
+        return f"https://www.google.com{href}", href
     return None, href
 
 

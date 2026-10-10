@@ -51,7 +51,10 @@ function LeadTable({ title, rows, showWebsite, collapsible, defaultOpen = true }
                 {showWebsite && (
                   <td>
                     <a href={r.website} target="_blank" rel="noreferrer">
-                      {new URL(r.website).hostname}
+                      {/* Scraping liefert Google-Weiterleitungen statt der echten Domain */}
+                      {new URL(r.website).hostname.includes("google.")
+                        ? "Website öffnen"
+                        : new URL(r.website).hostname}
                     </a>
                   </td>
                 )}
