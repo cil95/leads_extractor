@@ -7,11 +7,13 @@ Jeder Treffer braucht dafür die Felder "website" (URL oder None) und
 "booking" (bool).
 """
 
+# Leads = alle OHNE Terminbuchung (Zielgruppe für die eigene
+# Buchungsplattform) - deshalb zuerst.
 GROUP_TITLES = {
-    "none": "Weder Webseite noch Terminbuchung",
-    "booking_only": "Nur Terminbuchung, keine Webseite",
-    "website_only": "Nur Webseite, keine Terminbuchung",
-    "both": "Webseite und Terminbuchung",
+    "none": "Lead: ohne Terminbuchung, ohne Webseite",
+    "website_only": "Lead: ohne Terminbuchung, mit Webseite",
+    "booking_only": "Kein Lead: hat Terminbuchung, keine Webseite",
+    "both": "Kein Lead: hat Terminbuchung und Webseite",
 }
 
 

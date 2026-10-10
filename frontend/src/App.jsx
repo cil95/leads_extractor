@@ -9,11 +9,12 @@ const MODES = {
   },
 };
 
+// Leads = alle OHNE Terminbuchung (Zielgruppe für die eigene Buchungsplattform).
 const GROUPS = [
-  { key: "none", title: "Weder Webseite noch Terminbuchung", defaultOpen: true },
-  { key: "booking_only", title: "Nur Terminbuchung, keine Webseite", defaultOpen: true },
-  { key: "website_only", title: "Nur Webseite, keine Terminbuchung", defaultOpen: false },
-  { key: "both", title: "Webseite und Terminbuchung", defaultOpen: false },
+  { key: "none", title: "Lead: ohne Terminbuchung, ohne Webseite", lead: true },
+  { key: "website_only", title: "Lead: ohne Terminbuchung, mit Webseite", lead: true },
+  { key: "booking_only", title: "Kein Lead: hat Terminbuchung, keine Webseite", lead: false },
+  { key: "both", title: "Kein Lead: hat Terminbuchung und Webseite", lead: false },
 ];
 
 function LeadTable({ title, rows, showWebsite, collapsible, defaultOpen = true }) {
@@ -141,7 +142,8 @@ export default function App() {
         <div className="results">
           <p className="summary">
             {result.total} Treffer für "{result.query}" –{" "}
-            {GROUPS.map((g) => `${result[g.key]?.length || 0} ${g.title.toLowerCase()}`).join(", ")}
+            {GROUPS.filter((g) => g.lead).reduce((n, g) => n + (result[g.key]?.length || 0), 0)}{" "}
+            Leads ohne Terminbuchung
           </p>
           {mode === "places" && (
             <p className="hint">
@@ -157,7 +159,7 @@ export default function App() {
               rows={result[g.key]}
               showWebsite={g.key === "website_only" || g.key === "both"}
               collapsible
-              defaultOpen={g.defaultOpen}
+              defaultOpen={g.lead}
             />
           ))}
         </div>
