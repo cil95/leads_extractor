@@ -89,7 +89,18 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, mode }),
       });
-      const data = await res.json();
+      // Bei Timeout liefert Vercel eine Text-/HTML-Fehlerseite statt JSON.
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          res.status === 504
+            ? "Zeitüberschreitung – die Suche hat zu lange gedauert."
+            : `Unerwartete Antwort vom Server (HTTP ${res.status}).`
+        );
+      }
       if (!res.ok) {
         throw new Error(data.error || data.detail || "Unbekannter Fehler");
       }

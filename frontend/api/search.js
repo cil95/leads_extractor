@@ -34,7 +34,14 @@ export default async function handler(req, res) {
       body: JSON.stringify({ query, debug: !!debug }),
     });
 
-    const data = await upstream.json();
+    // Bei unbehandelten Fehlern antwortet FastAPI mit Klartext statt JSON.
+    const text = await upstream.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: `Backend-Fehler (HTTP ${upstream.status}): ${text.slice(0, 200)}` };
+    }
     res.status(upstream.status).json(data);
   } catch (err) {
     res.status(502).json({ error: "Oracle-Backend nicht erreichbar." });
