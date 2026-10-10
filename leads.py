@@ -1,7 +1,8 @@
 """
 Sucht bei Google (normale Websuche) nach einem Begriff wie "Friseure in Münster"
-und listet die Firmen aus dem lokalen Ergebnis-Block auf, die KEINE eigene
-Webseite hinterlegt haben (kein echter href-Link auf eine Firmenwebsite).
+und teilt die Firmen aus dem lokalen Ergebnis-Block danach ein, ob sie eine
+eigene Webseite (echter href-Link hinter dem "Website"-Button) und/oder eine
+Online-Terminbuchung ("Termine"-Button) im Google-Profil hinterlegt haben.
 
 Nutzung:
     python leads.py "Friseure in Münster"
@@ -35,6 +36,8 @@ import urllib.parse
 
 from lxml import html as lhtml
 from playwright.sync_api import sync_playwright
+
+from lead_groups import group_leads, print_groups
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -222,6 +225,13 @@ def extract_website(details) -> tuple[str | None, str | None]:
     return None, href
 
 
+def extract_booking(details) -> bool:
+    """Prüft den Termine-Button auf gleicher Ebene wie rllt__details:
+    .../following-sibling::a//div[text()='Termine']. Der Link dahinter
+    (z.B. Planity, Treatwell) ist egal - nur ob es den Button gibt."""
+    return bool(details.xpath(f"{XPATH_UP_TO_SIBLINGS}//div[text()='Termine']"))
+
+
 def extract_address(details) -> str | None:
     dir_a = details.xpath(f"{XPATH_UP_TO_SIBLINGS}[starts-with(@href, '/maps/dir/')]")
     if not dir_a:
@@ -297,6 +307,7 @@ def search(query: str, debug: bool = False) -> dict:
         name = extract_name(details) or "(unbekannt)"
         sponsored = is_sponsored(details)
         website, raw_href = extract_website(details)
+        booking = extract_booking(details)
         address = extract_address(details)
         phone = extract_phone(details)
         rating = extract_rating(details)
@@ -311,6 +322,7 @@ def search(query: str, debug: bool = False) -> dict:
                 "name": name,
                 "sponsored": sponsored,
                 "website": website,
+                "booking": booking,
                 "address": address,
                 "phone": phone,
                 "rating": rating,
@@ -319,14 +331,11 @@ def search(query: str, debug: bool = False) -> dict:
 
     organic = [r for r in results if not r["sponsored"]]
     sponsored_results = [r for r in results if r["sponsored"]]
-    with_site = [r for r in organic if r["website"]]
-    without_site = [r for r in organic if not r["website"]]
 
     return {
         "query": query,
         "total": len(results),
-        "with_website": with_site,
-        "without_website": without_site,
+        **group_leads(organic),
         "sponsored": sponsored_results,
     }
 
@@ -353,8 +362,6 @@ def main():
         print(str(e))
         sys.exit(3)
 
-    without_site = result["without_website"]
-    with_site = result["with_website"]
     sponsored_results = result["sponsored"]
 
     print(f"\n{result['total']} Treffer im lokalen Ergebnis-Block gefunden.")
@@ -362,23 +369,9 @@ def main():
         print(
             f"  -> {len(sponsored_results)} davon Anzeigen (Gesponsert) - ausgeschlossen, da unzuverlässig"
         )
-    print(
-        f"  -> {len(with_site)} mit Webseite, {len(without_site)} OHNE Webseite (Leads)\n"
-    )
+    print()
 
-    if without_site:
-        print("=== Leads OHNE Webseite ===\n")
-        for r in without_site:
-            print(f"- {r['name']}")
-            if r["address"]:
-                print(f"    Adresse : {r['address']}")
-            if r["phone"]:
-                print(f"    Telefon : {r['phone']}")
-            if r["rating"]:
-                print(f"    Bewertung: {r['rating']}")
-            print()
-    else:
-        print("Alle gefundenen Firmen haben eine Webseite hinterlegt.")
+    print_groups(result)
 
     if sponsored_results:
         print(

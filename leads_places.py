@@ -30,6 +30,8 @@ import urllib.parse
 import requests
 from dotenv import load_dotenv
 
+from lead_groups import group_leads, print_groups
+
 load_dotenv()
 
 TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
@@ -140,6 +142,12 @@ def search(query: str, api_key: str | None = None, debug: bool = False) -> dict:
         rating = p.get("rating")
         rating_count = p.get("userRatingCount")
         website = p.get("websiteUri")
+        # Den separaten "Online buchen"-Button liefert die Places API nicht.
+        # Erkennbar ist nur, ob das Website-Feld selbst auf eine
+        # Buchungsplattform zeigt - dann ist das keine eigene Webseite.
+        booking = has_booking_platform(website)
+        if booking:
+            website = None
 
         rating_str = None
         if rating is not None:
@@ -152,18 +160,14 @@ def search(query: str, api_key: str | None = None, debug: bool = False) -> dict:
                 "phone": phone,
                 "rating": rating_str,
                 "website": website,
-                "booking": has_booking_platform(website),
+                "booking": booking,
             }
         )
-
-    with_site = [r for r in results if r["website"]]
-    without_site = [r for r in results if not r["website"]]
 
     return {
         "query": query,
         "total": len(results),
-        "with_website": with_site,
-        "without_website": without_site,
+        **group_leads(results),
     }
 
 
@@ -184,31 +188,8 @@ def main():
         print(str(e))
         sys.exit(1)
 
-    with_site = result["with_website"]
-    without_site = result["without_website"]
-
-    print(f"\n{result['total']} Treffer gefunden.")
-    print(f"  -> {len(with_site)} mit Webseite, {len(without_site)} OHNE Webseite (Leads)\n")
-
-    if without_site:
-        print("=== Leads OHNE Webseite ===\n")
-        for r in without_site:
-            print(f"- {r['name']}")
-            if r["address"]:
-                print(f"    Adresse : {r['address']}")
-            if r["phone"]:
-                print(f"    Telefon : {r['phone']}")
-            if r["rating"]:
-                print(f"    Bewertung: {r['rating']}")
-            print()
-    else:
-        print("Alle gefundenen Firmen haben eine Webseite hinterlegt.")
-
-    if with_site:
-        print("\n=== Firmen mit Webseite (Terminbuchung erkannt?) ===\n")
-        for r in with_site:
-            booking_str = "Ja" if r["booking"] else "Nein"
-            print(f"- {r['name']}  ->  Terminbuchung: {booking_str}  ({r['website']})")
+    print(f"\n{result['total']} Treffer gefunden.\n")
+    print_groups(result)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,14 @@ const MODES = {
   },
 };
 
-function LeadTable({ title, rows, showBooking, collapsible, defaultOpen = true }) {
+const GROUPS = [
+  { key: "none", title: "Weder Webseite noch Terminbuchung", defaultOpen: true },
+  { key: "booking_only", title: "Nur Terminbuchung, keine Webseite", defaultOpen: true },
+  { key: "website_only", title: "Nur Webseite, keine Terminbuchung", defaultOpen: false },
+  { key: "both", title: "Webseite und Terminbuchung", defaultOpen: false },
+];
+
+function LeadTable({ title, rows, showWebsite, collapsible, defaultOpen = true }) {
   const [open, setOpen] = useState(defaultOpen);
 
   if (!rows || rows.length === 0) return null;
@@ -31,7 +38,7 @@ function LeadTable({ title, rows, showBooking, collapsible, defaultOpen = true }
               <th>Adresse</th>
               <th>Telefon</th>
               <th>Bewertung</th>
-              {showBooking && <th>Terminbuchung</th>}
+              {showWebsite && <th>Webseite</th>}
             </tr>
           </thead>
           <tbody>
@@ -41,7 +48,13 @@ function LeadTable({ title, rows, showBooking, collapsible, defaultOpen = true }
                 <td>{r.address || "-"}</td>
                 <td>{r.phone || "-"}</td>
                 <td>{r.rating || "-"}</td>
-                {showBooking && <td>{r.booking ? "Ja" : "Nein"}</td>}
+                {showWebsite && (
+                  <td>
+                    <a href={r.website} target="_blank" rel="noreferrer">
+                      {new URL(r.website).hostname}
+                    </a>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -124,16 +137,26 @@ export default function App() {
       {result && (
         <div className="results">
           <p className="summary">
-            {result.total} Treffer für "{result.query}" – {result.without_website?.length || 0} ohne Webseite
+            {result.total} Treffer für "{result.query}" –{" "}
+            {GROUPS.map((g) => `${result[g.key]?.length || 0} ${g.title.toLowerCase()}`).join(", ")}
           </p>
-          <LeadTable title="Leads ohne Webseite" rows={result.without_website} />
-          <LeadTable
-            title="Haben bereits eine Webseite"
-            rows={result.with_website}
-            showBooking={mode === "places"}
-            collapsible
-            defaultOpen={false}
-          />
+          {mode === "places" && (
+            <p className="hint">
+              Hinweis: Die Places API kennt den „Online buchen“-Button nicht. Terminbuchung wird hier
+              nur erkannt, wenn das Website-Feld auf eine Buchungsplattform zeigt. Für den Button
+              Google-Scraping verwenden.
+            </p>
+          )}
+          {GROUPS.map((g) => (
+            <LeadTable
+              key={g.key}
+              title={g.title}
+              rows={result[g.key]}
+              showWebsite={g.key === "website_only" || g.key === "both"}
+              collapsible
+              defaultOpen={g.defaultOpen}
+            />
+          ))}
         </div>
       )}
     </div>

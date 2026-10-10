@@ -100,6 +100,17 @@ h1 {
   color: #9aa0ac;
 }
 
+.hint {
+  color: #9aa0ac;
+  font-size: 0.85rem;
+  border-left: 3px solid #5b8cff;
+  padding-left: 0.75rem;
+}
+
+.result-block a {
+  color: #5b8cff;
+}
+
 .result-block {
   margin-top: 1.5rem;
 }
