@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { query, mode, debug } = req.body || {};
+  const { query, mode, debug, emails } = req.body || {};
   if (!query || typeof query !== "string" || !query.trim()) {
     res.status(400).json({ error: "query darf nicht leer sein." });
     return;
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
         ...(backendApiKey ? { "X-API-Key": backendApiKey } : {}),
       },
-      body: JSON.stringify({ query, debug: !!debug }),
+      body: JSON.stringify({ query, debug: !!debug, emails: emails !== false }),
     });
 
     // Bei unbehandelten Fehlern antwortet FastAPI mit Klartext statt JSON.

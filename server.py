@@ -57,6 +57,8 @@ scrape_lock = asyncio.Lock()
 class SearchRequest(BaseModel):
     query: str
     debug: bool = False
+    # E-Mails von den Firmen-Webseiten holen (dauert zusätzlich ~10-30s).
+    emails: bool = True
 
 
 def check_api_key(x_api_key: str | None):
@@ -79,7 +81,7 @@ async def search_places_endpoint(req: SearchRequest, x_api_key: str | None = Hea
         raise HTTPException(status_code=400, detail="query darf nicht leer sein.")
 
     try:
-        result = await asyncio.to_thread(leads_places.search, req.query, None, req.debug)
+        result = await asyncio.to_thread(leads_places.search, req.query, None, req.debug, req.emails)
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -100,7 +102,7 @@ async def search_scrape_endpoint(req: SearchRequest, x_api_key: str | None = Hea
 
     async with scrape_lock:
         try:
-            result = await asyncio.to_thread(leads.search, req.query, req.debug)
+            result = await asyncio.to_thread(leads.search, req.query, req.debug, req.emails)
         except leads.CaptchaError as e:
             raise HTTPException(status_code=429, detail=str(e))
         except leads.NoResultsError as e:

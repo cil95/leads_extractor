@@ -37,7 +37,9 @@ import urllib.parse
 from lxml import html as lhtml
 from playwright.sync_api import sync_playwright
 
+from emails import add_emails
 from lead_groups import group_leads, print_groups
+from leads_places import has_booking_platform
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -253,7 +255,7 @@ class NoResultsError(Exception):
     """Kein lokaler Ergebnis-Block im HTML gefunden."""
 
 
-def search(query: str, debug: bool = False) -> dict:
+def search(query: str, debug: bool = False, with_emails: bool = True) -> dict:
     """Führt die komplette Suche aus und gibt ein strukturiertes Ergebnis
     zurück, statt es auf stdout zu drucken. Wird sowohl vom CLI-Einstieg
     (main()) als auch vom API-Server (server.py) genutzt.
@@ -316,6 +318,15 @@ def search(query: str, debug: bool = False) -> dict:
 
     organic = [r for r in results if not r["sponsored"]]
     sponsored_results = [r for r in results if r["sponsored"]]
+    if with_emails:
+        add_emails(organic)
+        # Erst nach add_emails ist die echte Domain hinter /goto?url=...
+        # bekannt. Zeigt "Website" auf eine Buchungsplattform, ist das
+        # keine eigene Webseite, sondern eine Terminbuchung.
+        for r in organic:
+            if has_booking_platform(r["website"]):
+                r["website"] = None
+                r["booking"] = True
 
     return {
         "query": query,

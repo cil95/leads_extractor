@@ -39,6 +39,7 @@ function LeadTable({ title, rows, showWebsite, collapsible, defaultOpen = true }
               <th>Adresse</th>
               <th>Telefon</th>
               <th>Bewertung</th>
+              <th>E-Mail</th>
               {showWebsite && <th>Webseite</th>}
             </tr>
           </thead>
@@ -49,6 +50,7 @@ function LeadTable({ title, rows, showWebsite, collapsible, defaultOpen = true }
                 <td>{r.address || "-"}</td>
                 <td>{r.phone || "-"}</td>
                 <td>{r.rating || "-"}</td>
+                <td>{r.email ? <a href={`mailto:${r.email}`}>{r.email}</a> : "-"}</td>
                 {showWebsite && (
                   <td>
                     <a href={r.website} target="_blank" rel="noreferrer">

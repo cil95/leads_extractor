@@ -30,6 +30,7 @@ import urllib.parse
 import requests
 from dotenv import load_dotenv
 
+from emails import add_emails
 from lead_groups import group_leads, print_groups
 
 load_dotenv()
@@ -121,7 +122,9 @@ def search_places(query: str, api_key: str, debug: bool = False) -> list[dict]:
     return all_places
 
 
-def search(query: str, api_key: str | None = None, debug: bool = False) -> dict:
+def search(
+    query: str, api_key: str | None = None, debug: bool = False, with_emails: bool = True
+) -> dict:
     """Führt die komplette Places-Suche aus und gibt ein strukturiertes
     Ergebnis zurück, statt es auf stdout zu drucken. Wird sowohl vom
     CLI-Einstieg (main()) als auch vom API-Server (server.py) genutzt.
@@ -163,6 +166,9 @@ def search(query: str, api_key: str | None = None, debug: bool = False) -> dict:
                 "booking": booking,
             }
         )
+
+    if with_emails:
+        add_emails(results)
 
     return {
         "query": query,

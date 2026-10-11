@@ -35,6 +35,8 @@ def print_groups(result: dict):
             print(f"- {r['name']}")
             if r["website"]:
                 print(f"    Webseite : {r['website']}")
+            if r.get("email"):
+                print(f"    E-Mail   : {r['email']}")
             if r["address"]:
                 print(f"    Adresse  : {r['address']}")
             if r["phone"]:
